@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>不列颠空战</title>
+<style>
+  *{box-sizing:border-box;user-select:none;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{min-height:100vh;background:#0d1622;color:#e0e8f0;font-family:-apple-system,sans-serif;overflow-x:hidden;}
+  .screen{display:none;flex-direction:column;min-height:100vh;width:100%;}
+  .screen.active{display:flex;}
+  #startScreen{background:radial-gradient(ellipse at 50% 30%,#1a2a3e,#050810);align-items:center;justify-content:center;padding:30px;text-align:center;position:relative;}
+  #startScreen h1{font-size:28px;color:#f39c12;letter-spacing:3px;margin-bottom:25px;text-shadow:0 0 20px rgba(243,156,18,.5);}
+  #startScreen .version-tag{font-size:11px;color:#6a7a8e;letter-spacing:2px;margin-bottom:12px;font-weight:700;}
+  #startScreen .story{max-width:420px;font-size:14px;color:#b0c0d0;line-height:1.9;margin-bottom:35px;text-align:left;}
+  #startScreen .story p{margin-bottom:10px;}
+  #startScreen .em{color:#f39c12;font-weight:700;}
+  #startScreen button{padding:15px 50px;font-size:17px;font-weight:800;border:none;border-radius:30px;background:linear-gradient(180deg,#f39c12,#c87f0a);color:#fff;cursor:pointer;letter-spacing:2px;}
+  #startScreen .author-credit{position:absolute;top:16px;right:18px;font-size:11px;color:#8a9ab0;letter-spacing:1px;z-index:5;text-align:right;}
+  #startScreen .author-credit .author-name{color:#4a9eff;font-weight:800;font-size:12px;}
+  #startScreen .follow-btn{margin-top:6px;padding:5px 16px;font-size:11px;font-weight:800;border:none;border-radius:14px;background:linear-gradient(180deg,#fb7299,#d4527a);color:#fff;text-decoration:none;letter-spacing:1px;cursor:pointer;display:inline-block;transition:.15s;}
+  #startScreen .follow-btn:hover{filter:brightness(1.1);}
+  #startScreen .notice-btn{position:absolute;top:16px;left:18px;padding:6px 16px;font-size:12px;font-weight:800;border:2px solid #f39c12;border-radius:16px;background:transparent;color:#f39c12;cursor:pointer;letter-spacing:1px;transition:.15s;z-index:5;}
+  #startScreen .notice-btn:hover{background:rgba(243,156,18,.15);}
+  #loadingScreen{background:radial-gradient(ellipse at 50% 30%,#1a2a3e,#050810);align-items:center;justify-content:center;padding:30px;}
+  #loadingText{font-size:16px;color:#b0c0d0;margin-bottom:25px;height:24px;text-align:center;letter-spacing:1px;}
+  .loading-bar-track{width:80%;max-width:320px;height:8px;background:#1a2332;border-radius:4px;overflow:hidden;border:1px solid #2a3a4e;}
+  #loadingBar{height:100%;width:0;background:linear-gradient(90deg,#f39c12,#e74c3c);transition:width 1.5s ease;border-radius:4px;}
+  #roleSelectScreen{background:radial-gradient(ellipse at 50% 30%,#1a2a3e,#050810);align-items:center;justify-content:center;padding:20px;}
+  .role-select-wrap{max-width:560px;width:100%;}
+  .role-select-wrap h2{font-size:18px;color:#f39c12;text-align:center;margin-bottom:20px;letter-spacing:3px;text-shadow:0 0 15px rgba(243,156,18,.5);}
+  .role-cards{display:flex;gap:12px;}
+  .role-card{flex:1;background:#141c2e;border:2px solid #2a3a4e;border-radius:12px;padding:18px 12px;text-align:center;cursor:pointer;transition:.2s;}
+  .role-card:hover{border-color:#f39c12;transform:translateY(-4px);box-shadow:0 6px 20px rgba(243,156,18,.3);}
+  .role-icon{font-size:36px;margin-bottom:10px;}
+  .role-name{font-size:14px;font-weight:800;color:#f39c12;margin-bottom:10px;}
+  .role-desc{font-size:11px;color:#8a9ab0;line-height:1.7;text-align:left;}
+  #routeSelectScreen{background:linear-gradient(180deg,#1a2a4e 0%,#4a6cf7 30%,#e88a3a 75%,#f39c12 100%);position:relative;overflow:hidden;}
+  .sky-bg{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+  .cloud{position:absolute;background:rgba(255,255,255,.25);border-radius:50%;filter:blur(20px);animation:drift linear infinite;}
+  .cloud.c1{width:160px;height:50px;top:10%;animation-duration:30s;}
+  .cloud.c2{width:220px;height:60px;top:35%;animation-duration:45s;animation-delay:-10s;}
+  .cloud.c3{width:180px;height:45px;top:60%;animation-duration:38s;animation-delay:-20s;}
+  @keyframes drift{from{transform:translateX(-100%);}to{transform:translateX(100vw);}}
+  .routes-container{position:relative;z-index:2;display:flex;gap:6px;flex:1;padding:10px 8px 0 8px;min-height:0;}
+  .route-column{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 2px;border-radius:12px;}
+  .route-boss{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;background:#2c0a0a;border:2px solid #e74c3c;box-shadow:0 0 20px rgba(231,76,60,.8);flex:none;margin-bottom:4px;}
+  .route-node{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;border:2px solid #fff;flex:none;}
+  .route-node.normal{background:#6a7a8e;}
+  .route-node.elite{background:#e74c3c;box-shadow:0 0 12px rgba(231,76,60,.9);}
+  .route-node.reward{background:#f39c12;box-shadow:0 0 12px rgba(243,156,18,.7);}
+  .route-node.event{background:#4a6cf7;box-shadow:0 0 12px rgba(74,108,247,.9);}
+  .route-bottom{position:relative;z-index:2;padding:12px 10px 20px 10px;background:rgba(10,15,24,.85);border-top-left-radius:20px;border-top-right-radius:20px;flex:none;}
+  .route-bottom h2{font-size:15px;color:#f39c12;text-align:center;margin-bottom:10px;letter-spacing:2px;font-weight:800;}
+  .route-buttons{display:flex;gap:8px;}
+  .route-buttons button{flex:1;padding:12px 0;font-size:14px;font-weight:800;border:none;border-radius:10px;background:linear-gradient(180deg,#f39c12,#c87f0a);color:#fff;cursor:pointer;letter-spacing:1px;box-shadow:0 4px 12px rgba(243,156,18,.3);}
+  .route-buttons button:active{transform:scale(.97);}
+  #mapScreen{background:linear-gradient(180deg,#0d1622,#1a2332);padding:12px;}
+  .map-header{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;font-size:13px;color:#8a9ab0;gap:8px;}
+  .map-header .progress{color:#f39c12;font-weight:800;}
+  .map-deck-btn{padding:5px 10px;font-size:11px;font-weight:800;border:none;border-radius:8px;background:linear-gradient(180deg,#4a6cf7,#2a3fb0);color:#fff;cursor:pointer;flex:none;margin-left:auto;}
+  .map-deck-btn:active{transform:scale(.96);}
+  #accessoryBar{display:flex;gap:6px;padding:0 4px;}
+  .acc-icon{width:30px;height:30px;border-radius:8px;background:#1a2332;border:2px solid #4a6cf7;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;transition:.15s;}
+  .acc-icon:hover{transform:scale(1.1);border-color:#f39c12;}
+  .map-body{flex:1;overflow-y:auto;padding:10px;background:#0a0f18;border-radius:12px;border:1px solid #2a3a4e;margin-bottom:8px;}
+  #mapRoute{display:flex;flex-direction:column-reverse;align-items:center;gap:8px;}
+  .map-node{width:100%;max-width:320px;padding:9px 14px;border-radius:10px;display:flex;align-items:center;gap:10px;border:2px solid #2a3a4e;background:#1a2332;font-size:12px;}
+  .map-node.current{border-color:#f39c12;box-shadow:0 0 15px rgba(243,156,18,.5);}
+  .map-node.cleared{opacity:.4;}
+  .map-node .icon{font-size:16px;}
+  .map-node .label{flex:1;font-weight:700;}
+  .map-node.normal{border-left:4px solid #6a7a8e;}
+  .map-node.elite{border-left:4px solid #e74c3c;}
+  .map-node.reward{border-left:4px solid #f39c12;}
+  .map-node.event{border-left:4px solid #4a6cf7;}
+  .map-node.boss{border-left:4px solid #9b59b6;background:#2c0a0a;}
+  #enterRoomBtn{margin:0;padding:15px;font-size:16px;font-weight:800;border:none;border-radius:12px;background:linear-gradient(180deg,#f39c12,#c87f0a);color:#fff;cursor:pointer;flex:none;}
+  #enterRoomBtn:disabled{opacity:.3;}
+  /* 公告弹层 */
+  #noticeOverlay{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;padding:24px;z-index:300;overflow-y:auto;}
+  #noticeOverlay.active{display:flex;}
+  .notice-card{background:#141c2e;border:2px solid #f39c12;border-radius:16px;padding:24px;max-width:480px;width:100%;box-shadow:0 0 40px rgba(243,156,18,.3);max-height:85vh;overflow-y:auto;}
+  .notice-card h2{margin:0 0 6px 0;color:#f39c12;font-size:18px;letter-spacing:2px;text-align:center;}
+  .notice-date{font-size:11px;color:#6a7a8e;text-align:center;margin-bottom:18px;letter-spacing:1px;}
+  .notice-body{font-size:13px;color:#c0d0e0;line-height:1.9;white-space:pre-wrap;}
+  .notice-close{margin-top:22px;padding:10px 44px;font-size:14px;font-weight:800;border:none;border-radius:20px;background:linear-gradient(180deg,#f39c12,#c87f0a);color:#fff;cursor:pointer;display:block;margin-left:auto;margin-right:auto;letter-spacing:1px;}
+  #battleScreen{padding:8px;gap:6px;height:100vh;overflow:hidden;}
+  #battleScreen #game{display:flex;flex-direction:column;height:100%;gap:6px;}
+  #topBar{display:flex;gap:4px;padding:6px;background:#0d1622;border-radius:10px;border:1px solid #2a3a4e;flex:none;}
+  .stat{flex:1;text-align:center;font-size:9px;color:#8a9ab0;}
+  .stat span{display:block;font-size:14px;font-weight:800;color:#e0e8f0;margin-top:2px;}
+  .stat.hp span{color:#e74c3c;}
+  .stat.energy span{color:#f39c12;}
+  .stat.fatigue span{color:#9b59b6;}
+  .stat.overload span{color:#e67e22;}
+  #allyArea{display:flex;justify-content:center;gap:8px;padding:2px;flex-wrap:wrap;flex:none;min-height:0;}
+  .ally{background:#1a2332;border:2px solid #2ecc71;border-radius:8px;padding:5px 10px;text-align:center;min-width:78px;transition:.2s;}
+  .ally .aname{font-size:10px;font-weight:800;color:#2ecc71;}
+  .ally .ahp{font-size:10px;color:#8a9ab0;margin-top:2px;}
+  .ally.summoning{animation:allySummon .5s ease;}
+  @keyframes allySummon{0%{transform:scale(0);opacity:0;}60%{transform:scale(1.15);}100%{transform:scale(1);opacity:1;}}
+  #enemyArea{flex:1;display:flex;justify-content:center;align-items:center;gap:8px;padding:6px;flex-wrap:wrap;min-height:110px;overflow-y:auto;}
+  .enemy{background:#1a2332;border:2px solid #3a4a5e;border-radius:12px;padding:10px 14px;text-align:center;cursor:pointer;transition:.2s;min-width:95px;position:relative;}
+  .enemy.selected{border-color:#f39c12;box-shadow:0 0 15px rgba(243,156,18,.4);}
+  .enemy.dead{opacity:.3;pointer-events:none;}
+  .enemy .name{font-size:12px;font-weight:800;margin-bottom:6px;}
+  .enemy .hpBar{height:8px;background:#0a0f18;border-radius:4px;overflow:hidden;margin-bottom:4px;}
+  .enemy .hpFill{height:100%;background:linear-gradient(90deg,#e74c3c,#c0392b);transition:width .3s;}
+  .enemy .hpText{font-size:10px;color:#8a9ab0;margin-bottom:4px;}
+  .enemy .intent{font-size:11px;color:#f39c12;font-weight:700;}
+  .enemy .eblock{font-size:10px;color:#4a6cf7;font-weight:700;margin-top:2px;}
+  .enemy.hit-effect{animation:enemyHit .4s ease;}
+  @keyframes enemyHit{0%,100%{transform:translateX(0);filter:brightness(1);}25%{transform:translateX(-6px);filter:brightness(2) saturate(2);}75%{transform:translateX(6px);filter:brightness(2) saturate(2);}}
+  .enemy.attacking{animation:enemyAttack .5s ease;}
+  @keyframes enemyAttack{0%,100%{transform:translateY(0);box-shadow:0 0 0 rgba(231,76,60,0);}40%{transform:translateY(15px) scale(1.08);box-shadow:0 0 25px rgba(231,76,60,1);border-color:#e74c3c;}}
+  .float-dmg{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:18px;font-weight:900;color:#e74c3c;text-shadow:0 0 8px #000;pointer-events:none;animation:floatUp 1s ease forwards;z-index:5;}
+  @keyframes floatUp{0%{opacity:0;transform:translate(-50%,10px);}20%{opacity:1;}100%{opacity:0;transform:translate(-50%,-40px);}}
+  #log{flex:none;height:88px;overflow-y:auto;background:#0a0f18;border-radius:8px;padding:6px 10px;font-size:11px;color:#7a8a9e;line-height:1.6;}
+  #handArea{flex:none;display:flex;gap:6px;justify-content:flex-start;padding:4px 8px;overflow-x:auto;min-height:150px;align-items:flex-end;scroll-padding:8px;}
+  .card{width:88px;height:138px;border-radius:10px;border:2px solid #8a7a6a;padding:7px;display:flex;flex-direction:column;cursor:pointer;transition:.15s;flex:none;color:#1a1a1a;position:relative;}
+  .card:hover{transform:translateY(-8px);}
+  .card.attack{border-color:#e74c3c;background:linear-gradient(180deg,#ffe8e0,#f0d0c0);}
+  .card.block{border-color:#4a6cf7;background:linear-gradient(180deg,#e0e8ff,#c0d0f0);}
+  .card.skill{border-color:#2ecc71;background:linear-gradient(180deg,#e0ffe8,#c0f0d0);}
+  .card.rare{border-color:#a855f7;background:linear-gradient(180deg,#f3e8ff,#d8b4fe);box-shadow:0 0 10px rgba(168,85,247,.4);}
+  .card.rare .rare-tag{position:absolute;top:3px;right:3px;font-size:8px;color:#7c3aed;font-weight:800;background:rgba(168,85,247,.25);padding:1px 4px;border-radius:4px;}
+  .card.disabled{opacity:.35;pointer-events:none;}
+  .card .cost{width:22px;height:22px;border-radius:50%;background:#f39c12;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;margin-bottom:4px;}
+  .card .cname{font-size:10px;font-weight:800;margin-bottom:4px;line-height:1.2;}
+  .card .cdesc{font-size:9px;color:#4a4a4a;line-height:1.3;flex:1;}
+  .card .exhaust-tag{position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:8px;color:#fff;font-weight:800;background:#e74c3c;padding:1px 8px;border-radius:6px;letter-spacing:1px;}
+  #bottomBar{display:flex;gap:8px;align-items:center;flex:none;padding:4px 0;}
+  #battleAccBar{display:flex;gap:5px;flex:none;}
+  #battleAccBar .acc-icon{width:26px;height:26px;font-size:14px;border-radius:6px;}
+  #deckInfo{font-size:11px;color:#6a7a8e;}
+  .deck-btn{padding:12px 14px;font-size:14px;font-weight:800;border:none;border-radius:10px;background:linear-gradient(180deg,#4a6cf7,#2a3fb0);color:#fff;cursor:pointer;flex:none;}
+  .deck-btn:active{transform:scale(.97);}
+  #endTurnBtn{flex:1;padding:12px;font-size:16px;font-weight:800;border:none;border-radius:10px;background:linear-gradient(180deg,#4a6cf7,#2a3fb0);color:#fff;cursor:pointer;}
+  #endTurnBtn:disabled{opacity:.3;}
+  #blockText.flash{animation:blockFlash .5s ease;}
+  @keyframes blockFlash{0%,100%{color:#4a6cf7;}50%{color:#fff;text-shadow:0 0 15px #4a6cf7;}}
+  #hpText.flash{animation:hpFlash .6s ease;}
+  @keyframes hpFlash{0%,100%{color:#e74c3c;}50%{color:#2ecc71;text-shadow:0 0 15px #2ecc71;}}
+  #energyText.flash{animation:energyFlash .5s ease;}
+  @keyframes energyFlash{0%,100%{color:#f39c12;}50%{color:#fff;text-shadow:0 0 15px #f39c12;}}
+  #overloadText.flash{animation:overloadFlash .5s ease;}
+  @keyframes overloadFlash{0%,100%{color:#e67e22;}50%{color:#fff;text-shadow:0 0 15px #e67e22;}}
+  #game.damaged{animation:screenShake .35s ease;}
+  @keyframes screenShake{0%,100%{transform:translate(0,0);}20%{transform:translate(-4px,3px);}40%{transform:translate(4px,-3px);}60%{transform:translate(-3px,-4px);}80%{transform:translate(3px,4px);}}
+  #game.hurt{animation:redFlash .55s ease;}
+  @keyframes redFlash{0%{box-shadow:inset 0 0 0 rgba(231,76,60,0);}30%{box-shadow:inset 0 0 120px rgba(231,76,60,.7);}100%{box-shadow:inset 0 0 0 rgba(231,76,60,0);}}
+  #eventScreen{background:radial-gradient(ellipse at 50% 30%,#1a2a3e,#050810);align-items:center;justify-content:center;padding:24px;text-align:center;}
+  .event-wrap{max-width:480px;width:100%;}
+  .event-icon{font-size:56px;margin-bottom:14px;animation:eventIconIn .5s ease;opacity:0;animation-fill-mode:forwards;}
+  @keyframes eventIconIn{0%{transform:scale(0);opacity:0;}60%{transform:scale(1.15);}100%{transform:scale(1);opacity:1;}}
+  .event-title{font-size:20px;color:#f39c12;font-weight:800;letter-spacing:2px;margin-bottom:20px;opacity:0;animation:slideUp .4s ease .3s forwards;}
+  .event-desc{font-size:14px;color:#b0c0d0;line-height:1.8;margin-bottom:24px;text-align:left;opacity:0;animation:fadeIn .5s ease .6s forwards;}
+  @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+  @keyframes slideUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+  .event-option{background:#1a2332;border:2px solid #2a3a4e;border-radius:10px;padding:14px 16px;margin-bottom:10px;text-align:left;cursor:pointer;transition:.15s;opacity:0;animation:slideUp .35s ease forwards;}
+  .event-option:hover{border-color:#f39c12;background:#1f2a3e;}
+  .event-option.selected{border-color:#f39c12;background:#1f2a3e;box-shadow:0 0 15px rgba(243,156,18,.3);}
+  .event-option .opt-label{font-size:14px;font-weight:800;color:#f39c12;margin-bottom:4px;}
+  .event-option .opt-text{font-size:12px;color:#b0c0d0;line-height:1.6;}
+  .event-result-icon{font-size:44px;margin-bottom:16px;opacity:0;animation:eventIconIn .5s ease .1s forwards;}
+  .event-story-full{background:rgba(74,108,247,.12);border-radius:10px;padding:18px;font-size:13px;color:#c0d0e0;line-height:1.9;border-left:3px solid #4a6cf7;font-style:italic;margin-bottom:20px;text-align:left;opacity:0;animation:fadeIn .5s ease .3s forwards;}
+  .event-outcome-wrap{background:#0a0f18;border:2px solid #2ecc71;border-radius:10px;padding:14px 18px;margin-bottom:24px;opacity:0;animation:slideUp .4s ease .6s forwards;}
+  .event-outcome-label{font-size:11px;color:#2ecc71;letter-spacing:3px;font-weight:800;margin-bottom:6px;}
+  .event-outcome{font-size:15px;color:#7ef0a8;font-weight:800;line-height:1.5;}
+  .event-confirm-show{padding:14px 50px;font-size:16px;font-weight:800;border:none;border-radius:12px;background:linear-gradient(180deg,#f39c12,#c87f0a);color:#fff;cursor:pointer;letter-spacing:2px;opacity:0;animation:slideUp .4s ease .8s forwards;}
+  #deckViewOverlay{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;flex-direction:column;padding:16px;z-index:200;overflow-y:auto;}
+  #deckViewOverlay.active{display:flex;}
+  #deckViewHeader{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:6px 4px;flex:none;}
+  #deckViewHeader h3{margin:0;font-size:16px;color:#f39c12;letter-spacing:2px;}
+  #deckViewHeader button{background:#e74c3c;border:none;color:#fff;width:32px;height:32px;border-radius:8px;font-size:14px;font-weight:800;cursor:pointer;}
+  #deckViewCount{text-align:center;font-size:12px;color:#8a9ab0;margin-bottom:14px;flex:none;}
+  #deckViewCount b{color:#7ef0a8;}
+  #deckViewList{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;padding:8px 0 30px 0;}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;z-index:100;overflow-y:auto;}
+  .overlay.active{display:flex;}
+  .overlay h3{font-size:16px;color:#f39c12;margin-bottom:20px;text-align:center;}
+  #rewardCards{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+  #rewardCards .card{cursor:pointer;}
+  #rewardCards .card:hover{transform:translateY(-8px) scale(1.05);}
+  .choice-btn{padding:14px 24px;font-size:15px;font-weight:800;border:none;border-radius:10px;color:#fff;cursor:pointer;margin:0 6px;}
+  .skip-btn{padding:10px 28px;font-size:13px;font-weight:800;border:2px solid #5a6a7e;border-radius:20px;background:transparent;color:#8a9ab0;cursor:pointer;margin-top:20px;}
+  #deleteList{max-height:55vh;overflow-y:auto;display:flex;flex-wrap:wrap;gap:10px;justify-content:center;padding:10px;}
+  #deleteList .card{cursor:pointer;}
+  #deleteList .card:hover{transform:scale(1.05);border-color:#e74c3c;box-shadow:0 0 15px rgba(231,76,60,.6);}
+  #endScreen{background:radial-gradient(circle at 50% 30%,#1a4d2e,#050510);align-items:center;justify-content:center;padding:30px;text-align:center;}
+  #endScreen.lose{background:radial-gradient(circle at 50% 30%,#4d1a1a,#050510);}
+  #endScreen h1{font-size:24px;margin-bottom:15px;color:#2ecc71;}
+  #endScreen.lose h1{color:#e74c3c;}
+  #endScreen p{font-size:14px;color:#b0c0d0;margin-bottom:25px;line-height:1.8;}
+  #endScreen button{padding:14px 40px;font-size:16px;font-weight:800;border:none;border-radius:30px;background:linear-gradient(180deg,#f39c12,#c87f0a);color:#fff;cursor:pointer;}
+</style>
+</head>
+<body>
+<div id="startScreen" class="screen active">
+  <button class="notice-btn" onclick="openNotice()">📢 公告</button>
+  <div class="author-credit">本游戏由 <span class="author-name">云海仙山</span> 开发<br><a class="follow-btn" href="https://space.bilibili.com/488440106" target="_blank" rel="noopener">关注我</a></div>
+  <h1 id="gameTitle">不列颠空战</h1>
+  <div class="story">
+    <p><span class="em">1940年夏，不列颠上空</span></p>
+    <p>你是英国皇家空军的一名飞行员。</p>
+    <p>德军轰炸机群正越过英吉利海峡，企图摧毁我们的家园。</p>
+    <p>你的任务只有一个——<span class="em">击落敌方轰炸机，守住这片天空</span>。</p>
+    <p>前路漫漫，敌机环伺。每击落一架敌机，你都能获得新的战术卡牌。</p>
+    <p><span class="em">祝你好运，飞行员。</span></p>
+  </div>
+  <button onclick="onStartClick()">开始游戏</button>
+</div>
+
+<div id="loadingScreen" class="screen">
+  <div id="loadingText">正在创建随机房间...</div>
+  <div class="loading-bar-track"><div id="loadingBar"></div></div>
+</div>
+
+<div id="roleSelectScreen" class="screen">
+  <div class="role-select-wrap">
+    <h2>选择你的座机</h2>
+    <div class="role-cards">
+      <div class="role-card" onclick="selectRole('spitfire')">
+        <div class="role-icon">✈️</div>
+        <div class="role-name">喷火式战斗机</div>
+        <div class="role-desc">灵活、勇猛。奖励卡池以攻击和战术卡为主，没有召唤体系。</div>
+      </div>
+      <div class="role-card" onclick="selectRole('anson')">
+        <div class="role-icon">🛩️</div>
+        <div class="role-name">安森空中指挥机</div>
+        <div class="role-desc">沉稳、智慧。奖励卡池以召唤友军为核心战术。</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="routeSelectScreen" class="screen">
+  <div class="sky-bg"><div class="cloud c1"></div><div class="cloud c2"></div><div class="cloud c3"></div></div>
+  <div class="routes-container">
+    <div class="route-column"><div class="route-boss">💀</div><div id="route0"></div></div>
+    <div class="route-column"><div class="route-boss">💀</div><div id="route1"></div></div>
+    <div class="route-column"><div class="route-boss">💀</div><div id="route2"></div></div>
+  </div>
+  <div class="route-bottom">
+    <h2>选择你的航线</h2>
+    <div class="route-buttons">
+      <button onclick="selectRoute(0)">航线 A</button>
+      <button onclick="selectRoute(1)">航线 B</button>
+      <button onclick="selectRoute(2)">航线 C</button>
+    </div>
+  </div>
+</div>
+
+<div id="mapScreen" class="screen">
+  <div class="map-header">
+    <span>当前进度</span>
+    <span class="progress" id="mapProgress">0 / 10</span>
+    <div id="accessoryBar"></div>
+    <button class="map-deck-btn" onclick="showDeckView()">📚 卡组</button>
+  </div>
+  <div class="map-body"><div id="mapRoute"></div></div>
+  <button id="enterRoomBtn" onclick="enterCurrentRoom()">进入下一房间</button>
+</div>
+
+<div id="battleScreen" class="screen">
+  <div id="game">
+    <div id="topBar">
+      <div class="stat hp">HP<span id="hpText">70/70</span></div>
+      <div class="stat">格挡<span id="blockText">0</span></div>
+      <div class="stat energy">能量<span id="energyText">3/3</span></div>
+      <div class="stat fatigue">疲劳<span id="fatigueText">0</span></div>
+      <div class="stat overload">过载<span id="overloadText">0</span></div>
+    </div>
+    <div id="allyArea"></div>
+    <div id="enemyArea"></div>
+    <div id="log"></div>
+    <div id="handArea"></div>
+    <div id="bottomBar">
+      <div id="battleAccBar"></div>
+      <div id="deckInfo">抽牌堆 0 | 弃牌堆 0</div>
+      <button class="deck-btn" onclick="showDeckView()">📚</button>
+      <button id="endTurnBtn" onclick="endTurn()">结束回合</button>
+    </div>
+  </div>
+</div>
+
+<div id="eventScreen" class="screen">
+  <div class="event-wrap" id="eventChoiceView">
+    <div class="event-icon" id="eventIcon">❓</div>
+    <div class="event-title" id="eventTitle"></div>
+    <div class="event-desc" id="eventDesc"></div>
+    <div id="eventOptions"></div>
+  </div>
+  <div class="event-wrap" id="eventResultView" style="display:none;">
+    <div class="event-result-icon" id="eventResultIcon">📜</div>
+    <div class="event-story-full" id="eventStoryFull"></div>
+    <div class="event-outcome-wrap">
+      <div class="event-outcome-label">结果</div>
+      <div class="event-outcome" id="eventOutcome"></div>
+    </div>
+    <button class="event-confirm-show" onclick="confirmEventResult()">确认</button>
+  </div>
+</div>
+
+<div id="endScreen" class="screen">
+  <h1 id="endTitle"></h1>
+  <p id="endDesc"></p>
+  <button onclick="restart()">再来一局</button>
+</div>
+
+<div id="deckViewOverlay">
+  <div id="deckViewHeader">
+    <h3>📚 当前卡组</h3>
+    <button onclick="closeDeckView()">✕</button>
+  </div>
+  <div id="deckViewCount"></div>
+  <div id="deckViewList"></div>
+</div>
+
+<div id="rewardOverlay" class="overlay">
+  <h3>✈️ 获得一张新卡（可跳过）</h3>
+  <div id="rewardCards"></div>
+  <button class="skip-btn" onclick="skipReward()">跳过</button>
+</div>
+
+<div id="deleteOverlay" class="overlay">
+  <h3>🗑️ 删除一张卡牌（可跳过）</h3>
+  <div id="deleteList"></div>
+  <button class="skip-btn" onclick="skipDelete()">跳过</button>
+</div>
+
+<div id="rareRewardOverlay" class="overlay">
+  <h3>⭐ 奖励房：选择一张稀有卡</h3>
+  <div id="rareRewardCards"></div>
+</div>
+
+<div id="choiceOverlay" class="overlay">
+  <h3>呼叫殖民地</h3>
+  <div style="display:flex;gap:10px;">
+    <button class="choice-btn" style="background:linear-gradient(180deg,#2ecc71,#1e9e50);" onclick="resolveChoice('heal')">回复 12 点生命</button>
+    <button class="choice-btn" style="background:linear-gradient(180deg,#4a6cf7,#2a3fb0);" onclick="resolveChoice('draw')">抽 3 张牌</button>
+  </div>
+</div>
+
+<div id="accOverlay" class="overlay" onclick="closeAccOverlay()">
+  <div style="background:#1a2332;border:2px solid #4a6cf7;border-radius:14px;padding:24px;max-width:320px;text-align:center;" onclick="event.stopPropagation()">
+    <div id="accDetailIcon" style="font-size:40px;margin-bottom:10px;"></div>
+    <div id="accDetailName" style="font-size:16px;font-weight:800;color:#f39c12;margin-bottom:12px;"></div>
+    <div id="accDetailDesc" style="font-size:13px;color:#b0c0d0;line-height:1.7;"></div>
+  </div>
+</div>
+
+<div id="noticeOverlay" onclick="closeNotice(event)">
+  <div class="notice-card" onclick="event.stopPropagation()">
+    <h2 id="noticeTitle"></h2>
+    <div class="notice-date" id="noticeDate"></div>
+    <div class="notice-body" id="noticeBody"></div>
+    <button class="notice-close" onclick="closeNotice()">我知道了</button>
+  </div>
+</div>
+<script>
+  const $ = id => document.getElementById(id);
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const CUSTOM_DESC = {
+    aim:'下一张攻击牌伤害翻倍',flare:'本回合敌人伤害减半',colony:'回血抽牌二选一',
+    wingman:'召唤角斗士僚机(10血2攻)',ground:'召唤地勤(10血,死亡时下回合手牌-1费)',
+    national:'本回合手牌-1费，抽2张',finest:'本回合每打出一张攻击牌，抽1张',
+    never:'下回合免疫所有伤害',aircoord:'召唤飓风MK I(10血6攻,受击时50%伤害转移给玩家)',
+    nightintercept:'召唤无畏Mk I(10血4攻)',searescue:'复活上一个被消灭的召唤物(满血,保留属性)',
+    lysander:'所有召唤物ATK+1',britannia:'所有召唤物ATK=当前HP，立即结束回合',
+    bigwing:'立即触发一次所有召唤物攻击',wartimeRepair:'第一个召唤物HP上限+10(1个召唤物时0费)',
+    stubbornBader:'伤害8+每损失6HP+1',headCharge:'伤害5(本场战斗内每次使用永久+2)',
+    fourFinger:'本回合敌方对召唤物伤害-2',defSpiral:'格挡5 · 本回合敌方对玩家伤害-2',
+    extremeManeuver:'-4HP · 获得2层过载(攻击牌+1伤)'
+  };
+  const CARD_DEFS = {
+    mg:{id:'mg',name:'机枪扫射',cost:1,type:'attack',damage:6},
+    dodge:{id:'dodge',name:'闪避机动',cost:1,type:'block',block:5},
+    dive:{id:'dive',name:'俯冲射击',cost:2,type:'attack',damage:12},
+    barrel:{id:'barrel',name:'滚筒机动',cost:1,type:'block',block:8,exhaust:true},
+    repair:{id:'repair',name:'紧急维修',cost:1,type:'skill',heal:8,exhaust:true},
+    flare:{id:'flare',name:'干扰弹',cost:1,type:'skill',weaken:true,exhaust:true},
+    ammo:{id:'ammo',name:'弹药补充',cost:1,type:'skill',draw:2},
+    wingman:{id:'wingman',name:'呼叫僚机',cost:1,type:'skill',summon:'wingman'},
+    aircoord:{id:'aircoord',name:'空中协同',cost:1,type:'skill',summon:'hurricane',exhaust:true},
+    lysander:{id:'lysander',name:'莱桑德传令机',cost:1,type:'skill',buffAllAlliesAtk:1},
+    nightintercept:{id:'nightintercept',name:'夜间拦截',cost:2,type:'skill',summon:'blenheim',exhaust:true},
+    searescue:{id:'searescue',name:'海面搜救',cost:1,type:'skill',revive:true,exhaust:true},
+    wartimeRepair:{id:'wartimeRepair',name:'战时抢修',cost:1,type:'skill',repairAlly:true},
+    fourFinger:{id:'fourFinger',name:'四指编队',cost:1,type:'skill',fourFinger:true,exhaust:true},
+    burst:{id:'burst',name:'机炮连射',cost:1,type:'attack',damage:8,exhaust:true},
+    fullfire:{id:'fullfire',name:'火力全开',cost:2,type:'attack',damage:16,exhaust:true},
+    boost:{id:'boost',name:'增压',cost:0,type:'skill',energy:1,exhaust:true},
+    aim:{id:'aim',name:'瞄准',cost:1,type:'skill',aim:true,exhaust:true},
+    fury:{id:'fury',name:'英吉利海峡的怒火',cost:3,type:'attack',damage:8,aoe:true,exhaust:true},
+    headCharge:{id:'headCharge',name:'迎头冲锋',cost:1,type:'attack',damage:5,headCharge:true},
+    defSpiral:{id:'defSpiral',name:'防御螺旋',cost:1,type:'block',block:5,defSpiral:true},
+    extremeManeuver:{id:'extremeManeuver',name:'极限机动',cost:1,type:'skill',selfDamage:4,overload:2},
+    colony:{id:'colony',name:'呼叫殖民地',cost:2,type:'skill',choice:'colony',exhaust:true,rare:true},
+    radar:{id:'radar',name:'雷达',cost:0,type:'skill',energy:1,draw:1,exhaust:true,rare:true},
+    support:{id:'support',name:'友军支援',cost:1,type:'block',block:8,aoeDamage:2,rare:true},
+    never:{id:'never',name:'绝不投降',cost:1,type:'skill',immune:true,exhaust:true,rare:true},
+    ground:{id:'ground',name:'皇家空军地勤',cost:1,type:'skill',summon:'ground',exhaust:true,rare:true},
+    britannia:{id:'britannia',name:'统治吧！不列颠尼亚！',cost:3,type:'skill',britannia:true,exhaust:true,rare:true},
+    bigwing:{id:'bigwing',name:'Big Wing战术',cost:2,type:'skill',bigwing:true,exhaust:true,rare:true},
+    finest:{id:'finest',name:'最光辉的时刻',cost:2,type:'skill',finest:true,exhaust:true,rare:true},
+    national:{id:'national',name:'国民服役',cost:2,type:'skill',national:true,draw:2,exhaust:true,rare:true},
+    stubbornBader:{id:'stubbornBader',name:'不屈巴德',cost:1,type:'attack',damage:8,stubbornBader:true,exhaust:true,rare:true}
+  };
+  const ENEMIES = {
+    bf109:{name:'Bf 109 战斗机',hp:30,dmg:6},
+    fw190:{name:'Fw 190 战斗机',hp:45,dmg:9,special:'fw190'},
+    me262:{name:'Me 262 喷气机',hp:60,dmg:12,special:'me262'},
+    bf110c:{name:'Bf 110C 驱逐机',hp:55,dmg:7,special:'bf110c'},
+    he177:{name:'He 177 轰炸机',hp:120,boss:true}
+  };
+  const ALLY_DEFS = {
+    wingman:{name:'角斗士僚机',hp:10,atk:2},
+    ground:{name:'皇家空军地勤',hp:10,atk:0,onDeath:'discount'},
+    hurricane:{name:'飓风MK I',hp:10,atk:6,onHit:'transfer'},
+    blenheim:{name:'无畏Mk I',hp:10,atk:4}
+  };
+  const ACCESSORY_DEFS = {
+    fuelTank:{id:'fuelTank',icon:'⛽',name:'扩容油箱',desc:'每场战斗第一回合额外抽1张牌。'},
+    armor:{id:'armor',icon:'🛡️',name:'加固装甲',desc:'战斗中每个友方回合结束时获得3点格挡。'},
+    intel:{id:'intel',icon:'📡',name:'德军航线情报',desc:'BOSS和精英怪对你造成的伤害-1。'}
+  };
+  const COMMON_GENERAL = ['barrel','repair','flare','ammo'];
+  const COMMON_SUMMON = ['wingman','aircoord','lysander','nightintercept','searescue','wartimeRepair','fourFinger'];
+  const COMMON_SPITFIRE = ['burst','fullfire','boost','aim','fury','headCharge','defSpiral','extremeManeuver'];
+  const RARE_GENERAL = ['colony','radar','support','never'];
+  const RARE_SUMMON = ['ground','britannia','bigwing'];
+  const RARE_SPITFIRE = ['finest','national','stubbornBader'];
+  let chosenRole=null;
+  function getCommonPool(){return chosenRole==='spitfire'?[...COMMON_GENERAL,...COMMON_SPITFIRE]:[...COMMON_GENERAL,...COMMON_SUMMON];}
+  function getRarePool(){return chosenRole==='spitfire'?[...RARE_GENERAL,...RARE_SPITFIRE]:[...RARE_GENERAL,...RARE_SUMMON];}
+  let player={hp:70,maxHp:70,block:0,energy:3,maxEnergy:3};
+  let allies=[],deadAllies=[],fatigueStacks=[],enemies=[],hand=[],drawPile=[],discardPile=[],deck=[];
+  let selectedEnemyIdx=0;
+  let aimActive=false,weakenActive=false,finestHourActive=false,immuneActive=false;
+  let tempDiscount=0,pendingDiscount=false;
+  let gamePhase='battle',bossTurnCounter=0;
+  let ownedRares=new Set(),pendingChoiceCard=null;
+  let routes=[],chosenRouteIdx=-1,currentRoomIdx=0,currentEnemyDef=null;
+  let newAllyIndices=[],pendingEndTurn=false;
+  let overload=0,accessories=new Set();
+  let fourFingerActive=false,defSpiralActive=false,headChargeBonus=0;
+  let currentEvent=null;
+  let usedElites=new Set();
+  let usedEvents=new Set();
+  let eventBattle=false;
+  function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+  function makeCard(id){return{...CARD_DEFS[id],uid:Math.random()};}
+  function buildInitialDeck(){const d=[];for(let i=0;i<5;i++)d.push(makeCard('mg'));for(let i=0;i<4;i++)d.push(makeCard('dodge'));d.push(makeCard('dive'));return d;}
+  function drawCards(n){for(let i=0;i<n;i++){if(drawPile.length===0){if(discardPile.length===0)break;drawPile=shuffle([...discardPile]);discardPile=[];}hand.push(drawPile.pop());}}
+  function log(msg){const el=$('log');if(el){el.innerHTML+=msg+'<br>';el.scrollTop=el.scrollHeight;}}
+  function dealDamageToEnemy(e,dmg){if(e.dead||dmg<=0)return 0;if(e.block&&e.block>0){const abs=Math.min(e.block,dmg);e.block-=abs;dmg-=abs;}if(dmg>0){e.hp-=dmg;if(e.hp<=0){e.hp=0;e.dead=true;}}return dmg;}
+  function showScreen(name){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(name+'Screen').classList.add('active');}
+  function realCost(c){let base=c.cost-tempDiscount;if(c.id==='wartimeRepair'&&allies.length===1)base-=1;return Math.max(0,base);}
+  function handleAllyDeath(a){if(a.onDeath==='discount'){pendingDiscount=true;log('🔧 皇家空军地勤的遗志：下回合手牌费用-1');}deadAllies.push({...a,hp:a.maxHp});}
+  function generateRoute(){
+    const rooms=new Array(10).fill('normal');
+    const elitePositions=[];
+    while(elitePositions.length<2){const p=2+Math.floor(Math.random()*8);if(!elitePositions.includes(p))elitePositions.push(p);}
+    rooms[elitePositions[0]]='elite';rooms[elitePositions[1]]='elite';
+    const eventPositions=[];
+    while(eventPositions.length<2){const p=2+Math.floor(Math.random()*8);if(!elitePositions.includes(p)&&!eventPositions.includes(p))eventPositions.push(p);}
+    rooms[eventPositions[0]]='event';rooms[eventPositions[1]]='event';
+    const rewardPositions=[];
+    while(rewardPositions.length<2){const p=Math.floor(Math.random()*10);if(rooms[p]==='normal'&&!rewardPositions.includes(p))rewardPositions.push(p);}
+    rooms[rewardPositions[0]]='reward';rooms[rewardPositions[1]]='reward';
+    return rooms;
+  }
+</script>
+<script>
+  function render(){
+    $('hpText').textContent=player.hp+'/'+player.maxHp;
+    $('blockText').textContent=player.block;
+    $('energyText').textContent=player.energy+'/'+player.maxEnergy;
+    $('fatigueText').textContent=fatigueStacks.length;
+    $('overloadText').textContent=overload;
+    $('deckInfo').textContent=`抽牌堆 ${drawPile.length} | 弃牌堆 ${discardPile.length}`;
+    $('allyArea').innerHTML=allies.map((a,i)=>{
+      const cls=newAllyIndices.includes(i)?'ally summoning':'ally';
+      return `<div class="${cls}"><div class="aname">${a.name}</div><div class="ahp">HP ${a.hp}/${a.maxHp}${a.atk>0?' · ATK '+a.atk:''}</div></div>`;
+    }).join('');
+    newAllyIndices=[];
+    $('enemyArea').innerHTML=enemies.map((e,i)=>{
+      if(e.dead)return'';
+      let intentText='—';
+      if(e.intent.type==='attack')intentText=`⚔️ 攻击 ${e.intent.value}`;
+      else if(e.intent.type==='multi')intentText=`⚔️⚔️ 双连射 ${e.intent.value}×2`;
+      else if(e.intent.type==='multi3')intentText=`⚔️⚔️⚔️ 三连射 ${e.intent.value}×3`;
+      else if(e.intent.type==='summon')intentText='📢 召唤';
+      else if(e.intent.type==='self_buff')intentText='⬆️ 强化 +4/+4';
+      const hpPct=Math.max(0,e.hp/e.maxHp*100);
+      const blockText=e.block>0?`<div class="eblock">🛡️ ${e.block}</div>`:'';
+      return `<div class="enemy ${i===selectedEnemyIdx?'selected':''}" data-idx="${i}" onclick="selectEnemy(${i})">
+        <div class="name">${e.name}</div>
+        <div class="hpBar"><div class="hpFill" style="width:${hpPct}%"></div></div>
+        <div class="hpText">${Math.max(0,e.hp)} / ${e.maxHp}</div>
+        <div class="intent">${intentText}</div>
+        ${blockText}
+      </div>`;
+    }).join('');
+    $('handArea').innerHTML=hand.map((c,i)=>{
+      const rc=realCost(c);
+      let canPlay=rc<=player.energy&&gamePhase==='battle';
+      if(c.revive&&deadAllies.length===0)canPlay=false;
+      if(c.repairAlly&&allies.length===0)canPlay=false;
+      const typeClass=c.rare?'rare':(c.type==='attack'?'attack':c.type==='block'?'block':'skill');
+      let desc;
+      if(CUSTOM_DESC[c.id])desc=CUSTOM_DESC[c.id];
+      else{
+        const fx=[];
+        if(c.damage)fx.push(`伤害${c.damage}${c.aoe?'(全体)':''}`);
+        if(c.block)fx.push(`格挡${c.block}`);
+        if(c.aoeDamage)fx.push(`全体${c.aoeDamage}伤`);
+        if(c.heal)fx.push(`回血${c.heal}`);
+        if(c.energy)fx.push(`+${c.energy}能量`);
+        if(c.draw)fx.push(`抽${c.draw}张`);
+        desc=fx.join(' · ');
+      }
+      const rareTag=c.rare?'<div class="rare-tag">稀有卡</div>':'';
+      const exhaustTag=c.exhaust?'<div class="exhaust-tag">消耗</div>':'';
+      return `<div class="card ${typeClass} ${canPlay?'':'disabled'}" onclick="playCard(${i})">
+        ${rareTag}${exhaustTag}
+        <div class="cost">${rc}</div>
+        <div class="cname">${c.name}</div>
+        <div class="cdesc">${desc}</div>
+      </div>`;
+    }).join('');
+    $('endTurnBtn').disabled=gamePhase!=='battle';
+    renderAccessories();
+  }
+  function selectEnemy(i){if(enemies[i].dead)return;selectedEnemyIdx=i;render();}
+  function flashEl(id){const el=$(id);if(!el)return;el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),600);}
+  function showFloatDamage(enemyIdx,dmg){
+    const el=document.querySelector(`#enemyArea .enemy[data-idx="${enemyIdx}"]`);
+    if(!el)return;
+    const d=document.createElement('div');d.className='float-dmg';d.textContent='-'+dmg;el.appendChild(d);
+    setTimeout(()=>d.remove(),1000);
+  }
+  function hitEnemyEffect(enemyIdx){
+    const el=document.querySelector(`#enemyArea .enemy[data-idx="${enemyIdx}"]`);
+    if(!el)return;
+    el.classList.add('hit-effect');
+    setTimeout(()=>el.classList.remove('hit-effect'),400);
+  }
+  function playEffects(effects){
+    if(!effects||effects.length===0)return;
+    effects.forEach(ef=>{
+      if(ef.type==='hit'){hitEnemyEffect(ef.idx);showFloatDamage(ef.idx,ef.dmg);}
+      else if(ef.type==='block'){flashEl('blockText');}
+      else if(ef.type==='heal'){flashEl('hpText');}
+      else if(ef.type==='energy'){flashEl('energyText');}
+      else if(ef.type==='overload'){flashEl('overloadText');}
+    });
+  }
+  function playCard(handIdx){
+    if(gamePhase!=='battle')return;
+    const c=hand[handIdx];
+    const rc=realCost(c);
+    if(rc>player.energy)return;
+    if(c.revive&&deadAllies.length===0)return;
+    if(c.repairAlly&&allies.length===0)return;
+    player.energy-=rc;
+    hand.splice(handIdx,1);
+    if(c.choice==='colony'){pendingChoiceCard=c;$('choiceOverlay').classList.add('active');render();return;}
+    const wasFinest=finestHourActive;
+    const effects=resolveCardEffects(c);
+    if(wasFinest&&c.id!=='finest'&&(c.type==='attack'||c.damage)){drawCards(1);log('✈️ 最光辉的时刻：抽1张牌');}
+    if(!c.exhaust)discardPile.push(c);else log(`🔥 ${c.name} 被消耗`);
+    if(enemies.every(e=>e.dead)){render();setTimeout(()=>battleWon(),400);return;}
+    render();
+    playEffects(effects);
+    if(pendingEndTurn){pendingEndTurn=false;setTimeout(()=>endTurn(),600);}
+  }
+  function calcDamage(base){let dmg=base;if(overload>0)dmg+=overload;return dmg;}
+  function resolveCardEffects(c){
+    const effects=[];
+    if(c.type==='attack'||c.damage){
+      let dmg=c.damage||0;
+      if(c.headCharge){dmg+=headChargeBonus;headChargeBonus+=2;}
+      if(aimActive){dmg*=2;aimActive=false;log('🎯 瞄准生效，伤害翻倍！');}
+      dmg=calcDamage(dmg);
+      if(c.stubbornBader){const lost=player.maxHp-player.hp;dmg+=Math.floor(lost/6);}
+      if(c.aoe){enemies.forEach((e,idx)=>{if(!e.dead){dealDamageToEnemy(e,dmg);effects.push({type:'hit',idx,dmg});}});log(`✈️ ${c.name} 对全体敌人造成 ${dmg} 点伤害`);}
+      else{
+        let target=enemies[selectedEnemyIdx];
+        if(!target||target.dead){target=enemies.find(e=>!e.dead);if(target)selectedEnemyIdx=enemies.indexOf(target);}
+        if(target){
+          const tIdx=enemies.indexOf(target);
+          dealDamageToEnemy(target,dmg);
+          effects.push({type:'hit',idx:tIdx,dmg});
+          log(`✈️ ${c.name} 对 ${target.name} 造成 ${dmg} 点伤害`);
+          if(target.dead)log(`💥 ${target.name} 被击落！`);
+        }
+      }
+    }
+    if(c.block){player.block+=c.block;log(`🛡️ ${c.name} 获得 ${c.block} 点格挡`);effects.push({type:'block'});}
+    if(c.aoeDamage){enemies.forEach((e,idx)=>{if(!e.dead){dealDamageToEnemy(e,c.aoeDamage);effects.push({type:'hit',idx,dmg:c.aoeDamage});}});log(`✈️ ${c.name} 对全体敌人造成 ${c.aoeDamage} 点伤害`);}
+    if(c.heal){player.hp=Math.min(player.maxHp,player.hp+c.heal);log(`🔧 ${c.name} 回复 ${c.heal} 点 HP`);effects.push({type:'heal'});}
+    if(c.energy){player.energy+=c.energy;log(`⚡ ${c.name} 获得 ${c.energy} 点能量`);effects.push({type:'energy'});}
+    if(c.draw){drawCards(c.draw);log(`📥 ${c.name} 抽了 ${c.draw} 张牌`);}
+    if(c.aim){aimActive=true;log(`🎯 瞄准已就绪，下一张攻击牌伤害翻倍`);}
+    if(c.weaken){weakenActive=true;log(`💨 干扰弹生效，本回合敌人伤害减半`);}
+    if(c.immune){immuneActive=true;log(`🛡️ 绝不投降！下个敌方回合免疫所有伤害`);}
+    if(c.finest){finestHourActive=true;log(`✈️ 最光辉的时刻！本回合每打出一张攻击牌抽1张`);}
+    if(c.national){tempDiscount+=1;log(`🇬🇧 国民服役！本回合手牌费用-1`);}
+    if(c.selfDamage){player.hp-=c.selfDamage;log(`💔 极限机动：失去 ${c.selfDamage} 点HP`);}
+    if(c.overload){overload+=c.overload;log(`⚡ 获得 ${c.overload} 层过载`);effects.push({type:'overload'});}
+    if(c.defSpiral){defSpiralActive=true;log(`🛡️ 防御螺旋：本回合敌方对玩家伤害-2`);}
+    if(c.fourFinger){fourFingerActive=true;log(`✈️ 四指编队：本回合敌方对召唤物伤害-2`);}
+    if(c.buffAllAlliesAtk){allies.forEach(a=>a.atk+=c.buffAllAlliesAtk);log(`📡 所有召唤物ATK+${c.buffAllAlliesAtk}`);}
+    if(c.britannia){allies.forEach(a=>{a.atk=a.hp;});log(`🇬🇧 统治吧！不列颠尼亚！所有召唤物ATK=当前HP`);pendingEndTurn=true;}
+    if(c.bigwing){allies.forEach(a=>{if(a.atk>0){let target=null,maxHp=-1;enemies.forEach(e=>{if(!e.dead&&e.hp>maxHp){maxHp=e.hp;target=e;}});if(target){const tIdx=enemies.indexOf(target);dealDamageToEnemy(target,a.atk);effects.push({type:'hit',idx:tIdx,dmg:a.atk});log(`✈️ ${a.name} 对 ${target.name} 造成 ${a.atk} 点伤害`);}}});log('✈️ Big Wing战术：所有召唤物立即攻击！');}
+    if(c.repairAlly){const a=allies[0];if(a){a.maxHp+=10;a.hp+=10;log(`🔧 战时抢修：${a.name} HP上限+10`);}}
+    if(c.revive){if(deadAllies.length>0){const revived=deadAllies.pop();allies.push(revived);newAllyIndices.push(allies.length-1);log(`🚁 海面搜救：${revived.name} 重新加入战场！`);}}
+    if(c.summon){const def=ALLY_DEFS[c.summon];allies.push({name:def.name,hp:def.hp,maxHp:def.hp,atk:def.atk||0,onDeath:def.onDeath||null,onHit:def.onHit||null});newAllyIndices.push(allies.length-1);log(`🛩️ ${c.name} 召唤了 ${def.name}`);}
+    if(enemies.every(e=>e.dead)){setTimeout(()=>battleWon(),400);}
+    return effects;
+  }
+  function resolveChoice(opt){
+    $('choiceOverlay').classList.remove('active');
+    const c=pendingChoiceCard;pendingChoiceCard=null;
+    const effects=[];
+    if(opt==='heal'){player.hp=Math.min(player.maxHp,player.hp+12);log('🔧 呼叫殖民地：回复 12 点生命');effects.push({type:'heal'});}
+    else{drawCards(3);log('📥 呼叫殖民地：抽 3 张牌');}
+    if(!c.exhaust)discardPile.push(c);else log(`🔥 ${c.name} 被消耗`);
+    if(enemies.every(e=>e.dead)){render();setTimeout(()=>battleWon(),400);return;}
+    render();
+    playEffects(effects);
+  }
+</script>
+<script>
+  function endTurn(){
+    if(gamePhase!=='battle')return;
+    gamePhase='enemyTurn';
+    while(hand.length>0)discardPile.push(hand.pop());
+    const effects=[];
+    allies.forEach(a=>{
+      if(a.atk>0){
+        let target=null,maxHp=-1;
+        enemies.forEach(e=>{if(!e.dead&&e.hp>maxHp){maxHp=e.hp;target=e;}});
+        if(target){const tIdx=enemies.indexOf(target);dealDamageToEnemy(target,a.atk);effects.push({type:'hit',idx:tIdx,dmg:a.atk});log(`✈️ ${a.name} 对 ${target.name} 造成 ${a.atk} 点伤害`);}
+      }
+    });
+    if(accessories.has('armor')){player.block+=3;log('🛡️ 加固装甲：获得3点格挡');}
+    if(fatigueStacks.length>0){const dmg=fatigueStacks.length;player.hp-=dmg;log(`🔩 金属疲劳对机体造成 ${dmg} 点伤害`);fatigueStacks=fatigueStacks.map(t=>t-1).filter(t=>t>0);}
+    render();
+    playEffects(effects);
+    if(enemies.every(e=>e.dead)){setTimeout(()=>battleWon(),400);return;}
+    if(player.hp<=0){player.hp=0;render();gameOver(false);return;}
+    setTimeout(()=>{enemyAct();},800);
+  }
+  function resolveAttack(dmg,attacker){
+    if(dmg<=0)return 0;
+    let actual=0;
+    const isEliteOrBoss=attacker.isBoss||attacker.isElite;
+    if(allies.length===0){
+      let d=defSpiralActive?Math.max(0,dmg-2):dmg;
+      if(accessories.has('intel')&&isEliteOrBoss)d=Math.max(0,d-1);
+      const absorbed=Math.min(player.block,d);
+      player.block-=absorbed;
+      const real=d-absorbed;
+      player.hp-=real;actual+=real;
+      log(`💢 ${attacker.name} 攻击玩家！${d} 伤害 (格挡 ${absorbed}, 掉血 ${real})`);
+      if(real>0){const g=$('game');g.classList.remove('hurt');void g.offsetWidth;g.classList.add('hurt');setTimeout(()=>g.classList.remove('hurt'),560);}
+      return actual;
+    }
+    let remaining=dmg;
+    const alive=[];
+    for(const a of allies){
+      if(remaining<=0){alive.push(a);continue;}
+      let take=fourFingerActive?Math.max(0,remaining-2):remaining;
+      if(take<=0){alive.push(a);continue;}
+      if(a.onHit==='transfer'){
+        const half=Math.floor(take/2);
+        if(half>=a.hp){
+          const overflow=half-a.hp;
+          actual+=a.hp;a.hp=0;remaining=overflow;
+          log(`💢 ${attacker.name} 攻击 ${a.name}，${a.name} 被击落`);
+        }else{
+          a.hp-=half;actual+=half;
+          const transfer=take-half;
+          const absorbed=Math.min(player.block,transfer);
+          player.block-=absorbed;
+          const real=transfer-absorbed;
+          player.hp-=real;actual+=real;
+          log(`💢 ${attacker.name} 攻击 ${a.name}，${half} 伤由飓风承受，${transfer} 转移给玩家 (掉血 ${real})`);
+          if(real>0){const g=$('game');g.classList.remove('hurt');void g.offsetWidth;g.classList.add('hurt');setTimeout(()=>g.classList.remove('hurt'),560);}
+          remaining=0;
+        }
+      }else{
+        const realTake=Math.min(a.hp,take);
+        a.hp-=realTake;actual+=realTake;remaining-=realTake;
+        log(`💢 ${attacker.name} 攻击 ${a.name}，造成 ${realTake} 伤害`);
+      }
+      if(a.hp>0)alive.push(a);
+      else handleAllyDeath(a);
+    }
+    allies=alive;
+    return actual;
+  }
+  async function enemyAct(){
+    let summons=0;
+    const attackActions=[],buffActions=[];
+    enemies.forEach((e,idx)=>{
+      if(e.dead)return;
+      if(e.intent.type==='attack'||e.intent.type==='multi'||e.intent.type==='multi3')attackActions.push({enemy:e,idx});
+      else if(e.intent.type==='summon')summons++;
+      else if(e.intent.type==='self_buff')buffActions.push({enemy:e,idx});
+    });
+    for(const act of buffActions){
+      act.enemy.atk+=4;act.enemy.maxHp+=4;act.enemy.hp+=4;
+      log(`⬆️ ${act.enemy.name} 自我强化！攻击力+4，生命上限+4`);
+      render();await sleep(600);
+    }
+    if(summons>0){
+      for(let i=0;i<summons;i++){enemies.push({name:'Bf 109 僚机',hp:15,maxHp:15,block:0,intent:{type:'attack',value:4},dead:false});log('📢 轰炸机召唤了一架僚机！');}
+      render();await sleep(600);
+    }
+    for(const act of attackActions){
+      const e=act.enemy;
+      const el=document.querySelector(`#enemyArea .enemy[data-idx="${act.idx}"]`);
+      if(el){el.classList.add('attacking');setTimeout(()=>el.classList.remove('attacking'),500);}
+      const g=$('game');g.classList.remove('damaged');void g.offsetWidth;g.classList.add('damaged');
+      setTimeout(()=>g.classList.remove('damaged'),360);
+      await sleep(400);
+      let segments=1;
+      if(e.intent.type==='multi')segments=2;
+      if(e.intent.type==='multi3')segments=3;
+      let actual=0;
+      for(let seg=0;seg<segments;seg++){
+        let dmg=e.intent.value;
+        if(immuneActive)dmg=0;
+        else if(weakenActive)dmg=Math.floor(dmg/2);
+        if(immuneActive&&seg===0)log('🛡️ 绝不投降！敌方攻击全部无效');
+        else if(weakenActive&&seg===0)log('💨 干扰弹使敌人伤害减半');
+        actual+=resolveAttack(dmg,e);
+        render();
+        await sleep(250);
+      }
+      if(e.isFw190&&e.intent.value>0){fatigueStacks.push(2);log(`🔩 ${e.name} 造成金属疲劳！`);await sleep(300);}
+      if(e.isBoss&&actual>0){const gain=Math.floor(actual*0.5);e.block+=gain;log(`🛡️ ${e.name} 因攻击获得 ${gain} 点格挡`);render();await sleep(400);}
+    }
+    player.block=0;weakenActive=false;immuneActive=false;finestHourActive=false;
+    fourFingerActive=false;defSpiralActive=false;
+    if(player.hp<=0){player.hp=0;render();gameOver(false);return;}
+    turn++;player.energy=player.maxEnergy;
+    if(accessories.has('fuelTank'))drawCards(6);else drawCards(5);
+    if(pendingDiscount){tempDiscount=1;pendingDiscount=false;log('🔧 地勤的遗产：本回合手牌费用-1');}
+    else{tempDiscount=0;}
+    refreshIntents();
+    gamePhase='battle';render();
+  }
+  function refreshIntents(){
+    enemies.forEach(e=>{
+      if(e.dead)return;
+      if(e.isBoss){bossTurnCounter++;e.intent=bossTurnCounter%2===1?{type:'attack',value:12}:{type:'summon'};}
+      else if(e.name==='Bf 109 僚机'){e.intent={type:'attack',value:4};}
+      else if(e.isMe262){if(e.me262Next==='attack'){e.intent={type:'attack',value:e.atk};e.me262Next='buff';}else{e.intent={type:'self_buff'};e.me262Next='attack';}}
+      else if(e.isBf110c){if(e.hp<=e.maxHp/2)e.intent={type:'multi3',value:7};else e.intent={type:'multi',value:7};}
+      else{e.intent={type:'attack',value:e.dmg||e.intent.value};}
+    });
+  }
+</script>
+<script>
+  const EVENTS = [
+    {id:'radar',icon:'📡',title:'雷达哨站',
+     desc:'你抵达一处海岸雷达观测站，操作员正在紧张地扫描海峡上空。雷达屏幕闪烁，他们发现了德军编队的动向，但天线受损，需要人手维修。',
+     options:[
+       {label:'A. 协助维修雷达',text:'消耗5点HP，获得一张「雷达」（若已拥有则回复10点HP）',
+        preview:()=>{
+          const hasRadar=ownedRares.has('radar');
+          let story='你爬上天线塔，海风灌进机舱服。你和操作员一起固定天线，手掌被冰冷的金属划破，血珠渗出。半小时后，雷达屏幕重新亮起——"信号清晰了！"操作员敬了个礼。';
+          if(hasRadar)story+=' 修完天线，你顺手检查了自己的飞机，地勤帮你补了补机翼上的弹孔。';
+          return{icon:'📡',story,outcome:hasRadar?'消耗5HP，回复10HP':'消耗5HP，获得「雷达」',
+            apply:()=>{player.hp-=5;if(player.hp<=0){player.hp=0;gameOver(false);return;}if(hasRadar){player.hp=Math.min(player.maxHp,player.hp+10);}else{ownedRares.add('radar');deck.push(makeCard('radar'));}advanceRoom();}};
+        }},
+       {label:'B. 直接接收情报',text:'获得一张「弹药补充」',
+        preview:()=>({icon:'📻',story:'"天线修不修随你，但这份情报你现在就得看。"操作员递给你一份标着德军编队坐标的电报，顺手塞给你一盒弹药。',outcome:'获得「弹药补充」',
+          apply:()=>{deck.push(makeCard('ammo'));advanceRoom();}})},
+       {label:'C. 离开',text:'无任何奖励',
+        preview:()=>({icon:'✈️',story:'你点点头，没有多说什么。海风仍在吹，雷达屏幕忽明忽暗。你转身回到飞机旁，重新起飞。',outcome:'无奖励',
+          apply:()=>{advanceRoom();}})}
+     ]},
+    {id:'damagedSpitfire',icon:'✈️',title:'受损的喷火',
+     desc:'田野间迫降一架喷火战斗机，飞行员安然无恙，但飞机机翼中弹。地勤问你要不要尝试抢修这架战机加入你的编队。',
+     options:[
+       {label:'A. 全力抢修',text:'消耗10点HP，获得一张角色专属稀有卡',
+        preview:()=>{
+          const pool=getRarePool().filter(id=>!ownedRares.has(id));
+          return{icon:'✈️',story:'你钻进机翼下方，和地勤一起拆解、更换、焊接。油污和血混在一起，但两个小时后，这架喷火的引擎重新发出了轰鸣。它现在属于你了。',
+            outcome:pool.length>0?'消耗10HP，获得一张角色专属稀有卡':'消耗10HP（无稀有卡可用，回复10HP）',
+            apply:()=>{player.hp-=10;if(player.hp<=0){player.hp=0;gameOver(false);return;}const p=getRarePool().filter(id=>!ownedRares.has(id));if(p.length===0){player.hp=Math.min(player.maxHp,player.hp+10);}else{const pick=p[Math.floor(Math.random()*p.length)];ownedRares.add(pick);deck.push(makeCard(pick));}advanceRoom();}};
+        }},
+       {label:'B. 只回收可用零件',text:'获得一张角色专属普通卡',
+        preview:()=>({icon:'🔩',story:'"别费劲了，能拆的都拆走。"你从这架残骸上卸下可用的零件——几块装甲板、一具还能用的氧气瓶。也许将来用得上。',outcome:'获得一张角色专属普通卡',
+          apply:()=>{const pool=getCommonPool();const pick=pool[Math.floor(Math.random()*pool.length)];deck.push(makeCard(pick));advanceRoom();}})},
+       {label:'C. 放弃战机，继续前进',text:'无奖励',
+        preview:()=>({icon:'✈️',story:'你看了那架喷火最后一眼，没有停留。战场上，每一分钟都宝贵。',outcome:'无奖励',
+          apply:()=>{advanceRoom();}})}
+     ]},
+    {id:'debate',icon:'🗣️',title:'大编队争论',
+     desc:'两名指挥官正在激烈争论战术：帕克主张分批拦截，利-马洛里主张集结大翼。两人都希望你支持他的方案。',
+     options:[
+       {label:'A. 支持【大翼集结】',text:'喷火：获得配件「扩容油箱」；安森：获得「Big Wing」或「扩容油箱」',
+        preview:()=>{
+          let outcome='';
+          if(chosenRole==='spitfire'){outcome=accessories.has('fuelTank')?'回复10HP':'获得配件「扩容油箱」';}
+          else{if(!ownedRares.has('bigwing'))outcome='获得「Big Wing」';else if(!accessories.has('fuelTank'))outcome='获得配件「扩容油箱」';else outcome='回复10HP';}
+          return{icon:'🗣️',story:'"利-马洛里说得对，我们需要集中力量。"你站到了大翼派一边。帕克皱起眉头，但没有反驳。',outcome,
+            apply:()=>{if(chosenRole==='spitfire'){if(accessories.has('fuelTank')){player.hp=Math.min(player.maxHp,player.hp+10);}else{accessories.add('fuelTank');}}else{if(!ownedRares.has('bigwing')){ownedRares.add('bigwing');deck.push(makeCard('bigwing'));}else if(!accessories.has('fuelTank')){accessories.add('fuelTank');}else{player.hp=Math.min(player.maxHp,player.hp+10);}}advanceRoom();}};
+        }},
+       {label:'B. 支持【分批拦截】',text:'获得配件「加固装甲」',
+        preview:()=>({icon:'🗣️',story:'"帕克说得对，我们不能把所有鸡蛋放在一个篮子里。"你站到了分批派一边。利-马洛里沉默了几秒，最终点了点头。',
+          outcome:accessories.has('armor')?'回复10HP':'获得配件「加固装甲」',
+          apply:()=>{if(!accessories.has('armor'))accessories.add('armor');else player.hp=Math.min(player.maxHp,player.hp+10);advanceRoom();}})},
+       {label:'C. 不站队，离开',text:'无奖励',
+        preview:()=>({icon:'✈️',story:'"我只是个飞行员，不是指挥官。"你耸耸肩，起身离开了指挥部。',outcome:'无奖励',
+          apply:()=>{advanceRoom();}})}
+     ]},
+    {id:'pilot',icon:'🪂',title:'跳伞的德军飞行员',
+     desc:'空中缠斗结束，一名德军机组跳伞落在你附近的田野。村民准备抓捕他。',
+     options:[
+       {label:'A. 接收俘虏',text:'获得一次三选一奖励',
+        preview:()=>({icon:'🪂',story:'村民把德军飞行员围住，你走上前去。他举起双手，眼神疲惫。你把他交给村民，他们从他身上搜出了一些东西。',outcome:'触发一次三选一奖励',
+          apply:()=>{showRewardSelection();}})},
+       {label:'B. 搜查他的飞行地图',text:'有概率获得配件「德军航线情报」，也有概率遭遇德军巡逻机',
+        preview:()=>{
+          const success=Math.random()<0.6;
+          if(success){
+            return{icon:'🗺️',story:'你蹲下身，翻找他的飞行地图袋。你找到一份标满德军航线的地图。指挥部的参谋说，这份情报能让你提前避开敌人的火力网。',
+              outcome:accessories.has('intel')?'回复5HP':'获得配件「德军航线情报」',
+              apply:()=>{if(!accessories.has('intel'))accessories.add('intel');else player.hp=Math.min(player.maxHp,player.hp+5);advanceRoom();}};
+          }else{
+            return{icon:'💥',story:'你刚翻开地图，远处传来引擎的轰鸣——一架Bf 109从云层中俯冲而下，子弹打在你脚边。是他的僚机！',
+              outcome:'遭遇Bf 109巡逻机，强制战斗！',
+              apply:()=>{eventBattle=true;startRoomBattle(ENEMIES.bf109);}};
+          }
+        }},
+       {label:'C. 离开',text:'无奖励',
+        preview:()=>({icon:'✈️',story:'你不想多事，转身离开。身后传来村民的呼喊声，但你没有回头。',outcome:'无奖励',
+          apply:()=>{advanceRoom();}})}
+     ]},
+    {id:'repairShop',icon:'🔧',title:'比弗布鲁克的维修厂',
+     desc:'飞机维修车间堆满受损飓风，工人们连夜抢修飞机。你可以赞助他们一些零件。',
+     options:[
+       {label:'A. 提交一张卡牌',text:'提交并消耗一张卡牌，获得未知奖励',
+        preview:()=>({icon:'🔧',story:'你走进车间，把一张牌放在桌上。工头点了点头，开始分配工人抢修。',outcome:'请选择要提交的卡牌',
+          apply:()=>{showEventDeleteSelection();}})},
+       {label:'B. 离开',text:'无奖励',
+        preview:()=>({icon:'✈️',story:'你看了看忙碌的工人们，不想打扰他们。车间里焊花四溅，你转身回到飞机旁。',outcome:'无奖励',
+          apply:()=>{advanceRoom();}})}
+     ]}
+  ];
+  let pendingEventPreview=null;
+  function enterEvent(){
+    let pool=EVENTS.filter(e=>!usedEvents.has(e.id));
+    if(pool.length===0)pool=EVENTS.slice();
+    const ev=pool[Math.floor(Math.random()*pool.length)];
+    usedEvents.add(ev.id);
+    currentEvent=ev;
+    $('eventIcon').textContent=ev.icon;
+    $('eventTitle').textContent=ev.title;
+    $('eventDesc').textContent=ev.desc;
+    $('eventOptions').innerHTML=ev.options.map((o,i)=>{
+      return `<div class="event-option" id="evOpt${i}" onclick="selectEventOption(${i})" style="animation-delay:${0.9+i*0.15}s;">
+        <div class="opt-label">${o.label}</div>
+        <div class="opt-text">${o.text}</div>
+      </div>`;
+    }).join('');
+    $('eventChoiceView').style.display='block';
+    $('eventResultView').style.display='none';
+    showScreen('event');
+  }
+  function selectEventOption(i){
+    pendingEventPreview=currentEvent.options[i].preview();
+    $('eventResultIcon').textContent=pendingEventPreview.icon||'📜';
+    $('eventStoryFull').textContent=pendingEventPreview.story;
+    $('eventOutcome').textContent=pendingEventPreview.outcome;
+    $('eventChoiceView').style.display='none';
+    $('eventResultView').style.display='block';
+  }
+  function confirmEventResult(){
+    if(!pendingEventPreview)return;
+    const apply=pendingEventPreview.apply;
+    pendingEventPreview=null;
+    apply();
+  }
+  function showEventDeleteSelection(){
+    $('deleteList').innerHTML=deck.map((c,i)=>cardHTML(c.id,`eventDeleteCard(${i})`)).join('');
+    $('deleteOverlay').classList.add('active');
+  }
+  function eventDeleteCard(idx){
+    const card=deck[idx];
+    deck.splice(idx,1);
+    $('deleteOverlay').classList.remove('active');
+    let outcomeText='';
+    let story2='';
+    if(card.rare){
+      const accs=Object.keys(ACCESSORY_DEFS).filter(id=>!accessories.has(id));
+      if(accs.length>0){
+        const pick=accs[Math.floor(Math.random()*accs.length)];
+        accessories.add(pick);
+        outcomeText=`获得配件「${ACCESSORY_DEFS[pick].name}」`;
+        story2='工头仔细看了看那张牌，眼睛一亮。他叫来几个最熟练的技师，连夜为你改装了一台新设备——他们从这张牌里读出了非凡的战术思路。天亮前，你的座机上多了一件新装备。';
+      }else{
+        player.hp=Math.min(player.maxHp,player.hp+10);
+        outcomeText='回复10点HP';
+        story2='工头仔细看了看那张牌，点了点头。"好东西，但我们现在帮不了你更多了。"他让工人帮你把飞机上的弹孔都补了补。';
+      }
+    }else{
+      player.hp=Math.min(player.maxHp,player.hp+10);
+      outcomeText='回复10点HP';
+      story2='工人们接过零件，立刻忙碌起来。几个小时后，他们帮你把飞机上的弹孔都补上了。"下次再来！"工头朝你挥了挥手。';
+    }
+    pendingEventPreview={
+      icon: card.rare?'⚙️':'🔧',
+      story: story2,
+      outcome: outcomeText,
+      apply: ()=>{advanceRoom();}
+    };
+    $('eventResultIcon').textContent=pendingEventPreview.icon;
+    $('eventStoryFull').textContent=pendingEventPreview.story;
+    $('eventOutcome').textContent=pendingEventPreview.outcome;
+    $('eventChoiceView').style.display='none';
+    $('eventResultView').style.display='block';
+  }
+  function renderAccessories(){
+    const html=[...accessories].map(id=>{
+      const a=ACCESSORY_DEFS[id];
+      return `<div class="acc-icon" onclick="showAccDetail('${id}')" title="${a.name}">${a.icon}</div>`;
+    }).join('');
+    const mapBar=$('accessoryBar');
+    if(mapBar)mapBar.innerHTML=html;
+    const battleBar=$('battleAccBar');
+    if(battleBar)battleBar.innerHTML=html;
+  }
+  function showAccDetail(id){
+    const a=ACCESSORY_DEFS[id];
+    $('accDetailIcon').textContent=a.icon;
+    $('accDetailName').textContent=a.name;
+    $('accDetailDesc').textContent=a.desc;
+    $('accOverlay').classList.add('active');
+  }
+  function closeAccOverlay(){$('accOverlay').classList.remove('active');}
+</script>
+<script>
+  function renderMap(){
+    $('mapProgress').textContent=Math.min(currentRoomIdx,10)+' / 10';
+    const route=routes[chosenRouteIdx];
+    let html='';
+    if(currentRoomIdx>=10){html+=`<div class="map-node boss current"><span class="icon">💀</span><span class="label">He 177 轰炸机（BOSS）</span></div>`;}
+    else{html+=`<div class="map-node boss"><span class="icon">💀</span><span class="label">He 177 轰炸机（BOSS）</span></div>`;}
+    for(let i=9;i>=0;i--){
+      const t=route[i];
+      const cls=i===currentRoomIdx?'current':(i<currentRoomIdx?'cleared':'');
+      const icon=t==='elite'?'✈️':(t==='reward'?'🎁':(t==='event'?'❓':'✈️'));
+      const label=t==='elite'?'精英敌机':(t==='reward'?'奖励房 · 稀有卡':(t==='event'?'事件房':'普通敌机'));
+      html+=`<div class="map-node ${t} ${cls}"><span class="icon">${icon}</span><span class="label">第 ${i+1} 房 · ${label}</span></div>`;
+    }
+    $('mapRoute').innerHTML=html;
+    renderAccessories();
+    $('enterRoomBtn').textContent=currentRoomIdx>=10?'进入 BOSS 战':'进入下一房间';
+  }
+  function showDeckView(){
+    const sortedDeck=[...deck].sort((a,b)=>{
+      if(a.rare&&!b.rare)return -1;
+      if(!a.rare&&b.rare)return 1;
+      return (a.cost||0)-(b.cost||0);
+    });
+    const rareCount=sortedDeck.filter(c=>c.rare).length;
+    $('deckViewCount').innerHTML=`共 <b>${deck.length}</b> 张（稀有卡 <b>${rareCount}</b> 张）`;
+    $('deckViewList').innerHTML=sortedDeck.map(c=>cardHTML(c.id,'void(0)')).join('');
+    $('deckViewOverlay').classList.add('active');
+  }
+  function closeDeckView(){$('deckViewOverlay').classList.remove('active');}
+  function openNotice(){
+    const notice = (typeof GAME_NOTICE !== 'undefined') ? GAME_NOTICE : {title:'暂无公告', date:'', content:'暂时没有新的公告内容。'};
+    $('noticeTitle').textContent = notice.title || '公告';
+    $('noticeDate').textContent = notice.date || '';
+    $('noticeBody').textContent = notice.content || '';
+    $('noticeOverlay').classList.add('active');
+  }
+  function closeNotice(e){
+    if(e && e.target && e.target.id !== 'noticeOverlay') return;
+    $('noticeOverlay').classList.remove('active');
+  }
+  function startRoomBattle(enemyDef){
+    currentEnemyDef=enemyDef;gamePhase='battle';
+    player.block=0;player.energy=player.maxEnergy;
+    aimActive=false;weakenActive=false;finestHourActive=false;immuneActive=false;
+    tempDiscount=0;pendingDiscount=false;pendingEndTurn=false;
+    overload=0;fourFingerActive=false;defSpiralActive=false;headChargeBonus=0;
+    allies=[];deadAllies=[];fatigueStacks=[];turn=1;selectedEnemyIdx=0;bossTurnCounter=0;newAllyIndices=[];
+    if(enemyDef.boss){
+      enemies=[{name:enemyDef.name,hp:enemyDef.hp,maxHp:enemyDef.hp,block:0,intent:{type:'attack',value:12},isBoss:true,dead:false}];bossTurnCounter=1;
+    }else{
+      const e={name:enemyDef.name,hp:enemyDef.hp,maxHp:enemyDef.hp,block:0,dead:false,dmg:enemyDef.dmg,isElite:enemyDef.special!==undefined};
+      if(enemyDef.special==='me262'){e.atk=12;e.me262Next='attack';e.intent={type:'attack',value:12};e.isMe262=true;}
+      else if(enemyDef.special==='fw190'){e.intent={type:'attack',value:enemyDef.dmg};e.isFw190=true;}
+      else if(enemyDef.special==='bf110c'){e.intent={type:'multi',value:7};e.isBf110c=true;}
+      else{e.intent={type:'attack',value:enemyDef.dmg};}
+      enemies=[e];
+    }
+    drawPile=shuffle([...deck]);discardPile=[];hand=[];
+    if(accessories.has('fuelTank'))drawCards(6);else drawCards(5);
+    $('log').innerHTML='';log(`⚔️ 进入房间：${enemyDef.name}`);
+    showScreen('battle');render();
+  }
+  function enterCurrentRoom(){
+    if(currentRoomIdx>=10){startRoomBattle(ENEMIES.he177);return;}
+    const t=routes[chosenRouteIdx][currentRoomIdx];
+    if(t==='reward'){showRareReward();return;}
+    if(t==='event'){enterEvent();return;}
+    let enemy;
+    if(t==='elite'){
+      const elitePool=[ENEMIES.me262,ENEMIES.bf110c].filter(e=>!usedElites.has(e.name));
+      if(elitePool.length===0)enemy=ENEMIES.me262;
+      else{enemy=elitePool[Math.floor(Math.random()*elitePool.length)];usedElites.add(enemy.name);}
+    }
+    else enemy=Math.random()<0.5?ENEMIES.bf109:ENEMIES.fw190;
+    startRoomBattle(enemy);
+  }
+  function battleWon(){
+    if(gamePhase==='reward'||gamePhase==='win'||gamePhase==='gameover')return;
+    gamePhase='reward';
+    if(currentEnemyDef&&currentEnemyDef.boss){gameOver(true);return;}
+    if(eventBattle){eventBattle=false;advanceRoom();return;}
+    showRewardSelection();
+  }
+  function generateRewards(){
+    const commonPool=getCommonPool();
+    const rarePool=getRarePool().filter(id=>!ownedRares.has(id));
+    const weighted=[];
+    commonPool.forEach(id=>{for(let i=0;i<3;i++)weighted.push(id);});
+    rarePool.forEach(id=>{weighted.push(id);});
+    const rewards=[];let tries=0;
+    while(rewards.length<3&&tries<200){tries++;const pick=weighted[Math.floor(Math.random()*weighted.length)];if(!rewards.includes(pick))rewards.push(pick);}
+    return rewards;
+  }
+  function cardHTML(id,onclick){
+    const c=CARD_DEFS[id];
+    const typeClass=c.rare?'rare':(c.type==='attack'?'attack':c.type==='block'?'block':'skill');
+    let desc;
+    if(CUSTOM_DESC[id])desc=CUSTOM_DESC[id];
+    else{
+      const fx=[];
+      if(c.damage)fx.push(`伤害${c.damage}${c.aoe?'(全体)':''}`);
+      if(c.block)fx.push(`格挡${c.block}`);
+      if(c.aoeDamage)fx.push(`全体${c.aoeDamage}伤`);
+      if(c.heal)fx.push(`回血${c.heal}`);
+      if(c.energy)fx.push(`+${c.energy}能量`);
+      if(c.draw)fx.push(`抽${c.draw}张`);
+      desc=fx.join(' · ');
+    }
+    const rareTag=c.rare?'<div class="rare-tag">稀有卡</div>':'';
+    const exhaustTag=c.exhaust?'<div class="exhaust-tag">消耗</div>':'';
+    return `<div class="card ${typeClass}" onclick="${onclick}">${rareTag}${exhaustTag}<div class="cost">${c.cost}</div><div class="cname">${c.name}</div><div class="cdesc">${desc}</div></div>`;
+  }
+  function showRewardSelection(){
+    const rewards=generateRewards();
+    $('rewardCards').innerHTML=rewards.map(id=>cardHTML(id,`pickReward('${id}')`)).join('');
+    $('rewardOverlay').classList.add('active');
+  }
+  function skipReward(){$('rewardOverlay').classList.remove('active');showDeleteSelection();}
+  function pickReward(id){if(CARD_DEFS[id].rare)ownedRares.add(id);deck.push(makeCard(id));$('rewardOverlay').classList.remove('active');showDeleteSelection();}
+  function showDeleteSelection(){$('deleteList').innerHTML=deck.map((c,i)=>cardHTML(c.id,`deleteCard(${i})`)).join('');$('deleteOverlay').classList.add('active');}
+  function skipDelete(){$('deleteOverlay').classList.remove('active');advanceRoom();}
+  function deleteCard(idx){deck.splice(idx,1);$('deleteOverlay').classList.remove('active');advanceRoom();}
+  function showRareReward(){
+    const rarePool=getRarePool().filter(id=>!ownedRares.has(id));
+    shuffle(rarePool);
+    const picks=rarePool.slice(0,3);
+    $('rareRewardCards').innerHTML=picks.map(id=>cardHTML(id,`pickRareReward('${id}')`)).join('');
+    $('rareRewardOverlay').classList.add('active');
+  }
+  function pickRareReward(id){ownedRares.add(id);deck.push(makeCard(id));$('rareRewardOverlay').classList.remove('active');currentRoomIdx++;showScreen('map');renderMap();}
+  function advanceRoom(){currentRoomIdx++;showScreen('map');renderMap();}
+  function gameOver(win){
+    gamePhase=win?'win':'gameover';showScreen('end');
+    const screen=$('endScreen');
+    if(win){screen.classList.remove('lose');$('endTitle').textContent='🎉 任务完成！';$('endDesc').textContent='你击落了敌方轰炸机，驾驶战机安全返航。英吉利海峡的上空，恢复了宁静。';}
+    else{screen.classList.add('lose');$('endTitle').textContent='💥 战机被击落';$('endDesc').textContent='你的战机坠落在英吉利海峡...但你的名字，将留在不列颠空战的史册上。';}
+  }
+  async function onStartClick(){
+    showScreen('loading');
+    const allTexts=['正在创建随机房间...','正在对敌军飞机进行维护...','正在招募飞行员...','正在给敌军轰炸机装弹...','正在绘制地图...'];
+    const texts=shuffle([...allTexts]).slice(0,4);
+    for(let i=0;i<4;i++){
+      $('loadingText').textContent=texts[i];
+      $('loadingBar').style.width=((i+1)/4*100)+'%';
+      await sleep(1500);
+    }
+    showScreen('roleSelect');
+  }
+  function selectRole(role){
+    chosenRole=role;usedElites=new Set();usedEvents=new Set();eventBattle=false;
+    routes=[generateRoute(),generateRoute(),generateRoute()];
+    renderRouteSelect();
+    showScreen('routeSelect');
+  }
+  function renderRouteSelect(){
+    for(let r=0;r<3;r++){
+      let html='';
+      for(let i=9;i>=0;i--){
+        const t=routes[r][i];
+        const icon=t==='reward'?'🎁':(t==='event'?'❓':'✈️');
+        html+=`<div class="route-node ${t}">${icon}</div>`;
+      }
+      $('route'+r).innerHTML=html;
+    }
+  }
+  function selectRoute(idx){chosenRouteIdx=idx;currentRoomIdx=0;showScreen('map');renderMap();}
+  function restart(){
+    player={hp:70,maxHp:70,block:0,energy:3,maxEnergy:3};
+    allies=[];deadAllies=[];fatigueStacks=[];enemies=[];hand=[];drawPile=[];discardPile=[];
+    deck=buildInitialDeck();ownedRares=new Set();accessories=new Set();
+    routes=[];chosenRouteIdx=-1;currentRoomIdx=0;newAllyIndices=[];chosenRole=null;usedElites=new Set();usedEvents=new Set();
+    overload=0;fourFingerActive=false;defSpiralActive=false;headChargeBonus=0;eventBattle=false;
+    showScreen('start');
+  }
+  deck=buildInitialDeck();
+/* ===== 版本号配置 ===== */
+const GAME_VERSION = '2.0.1';
+(function injectVersion(){
+  const h1=document.getElementById('gameTitle');
+  if(!h1)return;
+  const tag=document.createElement('div');
+  tag.className='version-tag';
+  tag.textContent='v'+GAME_VERSION;
+  h1.parentNode.insertBefore(tag,h1);
+})();
+/* ===== 公告配置（改这里即可更新公告） ===== */
+const GAME_NOTICE = {
+  title: 'v2.0.1 更新公告',
+  date: '2026-09-23',
+  content: `· 新增角色系统：喷火＆安森
+· 新增召唤体系卡牌：呼叫僚机、空中协同、夜间拦截、海面搜救等
+· 新增配件（遗物）系统：扩容油箱、加固装甲、德军航线情报
+· 新增过载（力量）系列卡牌
+· 新增事件房：雷达哨站、受损的喷火、大编队争论、跳伞的德军飞行员、维修厂
+· 新增精英怪 Bf 110C：双引擎连射，半血后三段攻击
+· 平衡性调整与多处体验优化`
+};
+</script>
+</body>
+</html>
